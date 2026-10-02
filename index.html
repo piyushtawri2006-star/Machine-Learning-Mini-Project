@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Real Estate Price Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-slate-100 flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="py-6 px-8 border-b border-slate-800/80 backdrop-blur-md bg-slate-950/40 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-white">PropAI <span class="text-indigo-400 font-light">Estimator</span></h1>
+            </div>
+            <span class="text-xs px-3 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-full font-medium">ML Powered v2.1</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-12 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Form Section -->
+        <div class="lg:col-span-5 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-8 rounded-3xl shadow-2xl">
+            <h2 class="text-2xl font-bold text-white mb-2">Property Valuation</h2>
+            <p class="text-slate-400 text-sm mb-6">Enter specifications to calculate market price and future trends.</p>
+
+            <form id="predictionForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">BHK Rooms</label>
+                        <input type="number" id="bhk" name="bhk" value="3" min="1" max="10" required
+                            class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Plot Size (Sq. Ft.)</label>
+                        <input type="number" id="plot_size" name="plot_size" value="1200" min="200" max="10000" required
+                            class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Floors</label>
+                        <input type="number" id="floors" name="floors" value="2" min="1" max="5" required
+                            class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Property Age (Years)</label>
+                        <input type="number" id="age_years" name="age_years" value="5" min="0" max="50" required
+                            class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Location / Neighborhood</label>
+                    <select id="location" name="location"
+                        class="w-full bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition">
+                        {% for loc in locations %}
+                            <option value="{{ loc }}">{{ loc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                    class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition duration-200 flex items-center justify-center space-x-2">
+                    <span>Calculate & Analyze Trends</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Result & Analytics Section -->
+        <div class="lg:col-span-7 space-y-6">
+            <div id="resultCard" class="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-8 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Estimated Market Value</h3>
+                        <div id="priceDisplay" class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                            ₹ --
+                        </div>
+                    </div>
+                    <span id="badgeConfidence" class="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-medium hidden">High Growth Asset</span>
+                </div>
+
+                <!-- Chart Container -->
+                <div id="chartContainer" class="mt-6 pt-6 border-t border-slate-800/80 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Past Trend & 10-Year Valuation Forecast</h4>
+                        <span class="text-[10px] text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">Est. 5.5% CAGR</span>
+                    </div>
+                    <div class="relative w-full h-64">
+                        <canvas id="valuationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Placeholder State -->
+                <div id="placeholderState" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-slate-900/90 backdrop-blur-md z-10">
+                    <div class="bg-slate-800/80 p-4 rounded-2xl mb-3 text-indigo-400">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                    </div>
+                    <p class="text-sm text-slate-200 font-medium">Submit form to view price valuation and 10-year growth chart</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-800/80">
+        &copy; 2026 PropAI Estimator. All rights reserved.
+    </footer>
+
+    <script>
+        let myChart = null;
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const placeholder = document.getElementById('placeholderState');
+            const chartContainer = document.getElementById('chartContainer');
+            const priceDisplay = document.getElementById('priceDisplay');
+            const badgeConfidence = document.getElementById('badgeConfidence');
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Analyzing Trends...`;
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    placeholder.classList.add('hidden');
+                    chartContainer.classList.remove('hidden');
+                    badgeConfidence.classList.remove('hidden');
+                    
+                    const formattedPrice = new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                    }).format(data.price);
+
+                    priceDisplay.textContent = formattedPrice;
+
+                    // Render Chart
+                    // Render Professional Classy Chart with Gradient Fill
+                    const ctx = document.getElementById('valuationChart').getContext('2d');
+                    
+                    if (myChart) {
+                        myChart.destroy();
+                    }
+
+                    // Create gradient fill
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+                    gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+                    myChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.chart_labels,
+                            datasets: [{
+                                label: 'Market Valuation (₹)',
+                                data: data.chart_values,
+                                borderColor: '#818cf8',
+                                backgroundColor: gradient,
+                                borderWidth: 3.5,
+                                fill: true,
+                                tension: 0.4, // Smooth curved wave
+                                pointBackgroundColor: '#4f46e5',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2.5,
+                                pointRadius: 5,
+                                pointHoverRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    titleColor: '#e2e8f0',
+                                    bodyColor: '#818cf8',
+                                    borderColor: 'rgba(99, 102, 241, 0.3)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let val = context.raw || 0;
+                                            return ' Valuation: ' + new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#64748b', font: { size: 12, weight: '500' } }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(51, 65, 85, 0.2)', borderDash: [4, 4] },
+                                    ticks: {
+                                        color: '#64748b',
+                                        font: { size: 12, weight: '500' },
+                                        callback: function(value) {
+                                            if (value >= 10000000) return (value / 10000000).toFixed(1) + ' Cr';
+                                            if (value >= 100000) return (value / 100000).toFixed(0) + ' L';
+                                            return value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('An error occurred during prediction.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Calculate & Analyze Trends';
+            }
+        });
+    </script>
+</body>
+</html>
